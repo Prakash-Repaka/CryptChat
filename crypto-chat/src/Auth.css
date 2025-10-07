@@ -1,0 +1,46 @@
+.auth {
+  max-width: 400px;
+  margin: 2rem auto;
+  padding: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+
+.auth h1 {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.auth form {
+  display: flex;
+  flex-direction: column;
+}
+
+.auth input {
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  color: #000;
+}
+
+.auth button {
+  padding: 0.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.auth .error {
+  color: red;
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+.auth p {
+  text-align: center;
+  color: blue;
+  cursor: pointer;
+  margin-top: 1rem;
+}

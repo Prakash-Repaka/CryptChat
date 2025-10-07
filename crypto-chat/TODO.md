@@ -1,0 +1,12 @@
+- [x] Install socket.io in backend
+- [x] Update server.js to integrate socket.io for real-time messaging
+- [x] Modify message routes to emit new messages via socket
+- [x] Install socket.io-client in frontend
+- [x] Refactor Chat.js to use WebSockets for real-time message updates
+- [x] Create Header component with logo and branding
+- [x] Create Sidebar component for online users
+- [x] Redesign Chat layout with modern chat bubbles and timestamps
+- [x] Add user avatars and improve overall styling
+- [ ] Add typing indicators and other polish features
+- [x] Test the real-time functionality and UI improvements
+- [x] Test backend API endpoints (auth and messages)
