@@ -6,6 +6,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const authRoutes = require('./routes/auth');
 const messageRoutes = require('./routes/messages');
+const userRoutes = require('./routes/users');
 
 dotenv.config();
 
@@ -31,12 +32,14 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/crypto-ch
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-.then(() => console.log('MongoDB connected'))
-.catch(err => console.log(err));
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.log(err));
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/admin', require('./middleware/auth'), require('./routes/admin'));
 
 // Socket.io connection
 io.on('connection', (socket) => {

@@ -4,10 +4,16 @@ const bcrypt = require('bcryptjs');
 const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
+  publicKey: { type: String, required: true },
+  isAdmin: { type: Boolean, default: false },
+  firstName: { type: String, required: true },
+  lastName: { type: String, required: true },
+  email: { type: String, required: true },
+  contactNumber: { type: String, required: true },
 });
 
 // Hash password before saving
-UserSchema.pre('save', async function(next) {
+UserSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   try {
     const salt = await bcrypt.genSalt(10);
@@ -19,7 +25,7 @@ UserSchema.pre('save', async function(next) {
 });
 
 // Method to compare password
-UserSchema.methods.comparePassword = async function(candidatePassword) {
+UserSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 

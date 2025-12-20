@@ -7,13 +7,13 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
 // Signup route
 router.post('/signup', async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, publicKey, firstName, lastName, email, contactNumber } = req.body;
   try {
     let user = await User.findOne({ username });
     if (user) {
       return res.status(400).json({ message: 'Username already exists' });
     }
-    user = new User({ username, password });
+    user = new User({ username, password, publicKey, firstName, lastName, email, contactNumber });
     await user.save();
     const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '1d' });
     res.json({ token, username: user.username });
@@ -35,7 +35,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
     const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '1d' });
-    res.json({ token, username: user.username });
+    res.json({ token, username: user.username, publicKey: user.publicKey, isAdmin: user.isAdmin });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }

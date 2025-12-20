@@ -4,26 +4,11 @@ const Message = require('../models/Message');
 const User = require('../models/User');
 const router = express.Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
-
-// Middleware to verify token
-const auth = (req, res, next) => {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
-  if (!token) {
-    return res.status(401).json({ message: 'No token, authorization denied' });
-  }
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded.id;
-    next();
-  } catch (err) {
-    res.status(401).json({ message: 'Token is not valid' });
-  }
-};
+const auth = require('../middleware/auth');
 
 // Send message
 router.post('/', auth, async (req, res) => {
-  const { receiverUsername, encryptedMessage } = req.body;
+  const { receiverUsername, encryptedMessage, encryptedKey } = req.body;
   try {
     const receiver = await User.findOne({ username: receiverUsername });
     if (!receiver) {
@@ -33,6 +18,7 @@ router.post('/', auth, async (req, res) => {
       sender: req.user,
       receiver: receiver._id,
       encryptedMessage,
+      encryptedKey,
     });
     await message.save();
 
