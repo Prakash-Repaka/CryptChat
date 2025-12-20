@@ -10,6 +10,14 @@ const UserSchema = new mongoose.Schema({
   lastName: { type: String, required: true },
   email: { type: String, required: true },
   contactNumber: { type: String, required: true },
+  isBanned: { type: Boolean, default: false },
+  banReason: { type: String },
+  sessions: [{
+    deviceId: String,
+    ip: String,
+    lastSeen: { type: Date, default: Date.now },
+    userAgent: String
+  }]
 });
 
 // Hash password before saving

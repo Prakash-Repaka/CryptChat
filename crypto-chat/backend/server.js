@@ -9,8 +9,10 @@ const socketIo = require('socket.io');
 const authRoutes = require('./routes/auth');
 const messageRoutes = require('./routes/messages');
 const userRoutes = require('./routes/users');
+const { apiLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
+app.use(apiLimiter); // Apply global rate limiting
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {

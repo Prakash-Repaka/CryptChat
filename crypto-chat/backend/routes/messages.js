@@ -7,13 +7,19 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 
 const { logActivity } = require('../utils/logger');
+const { messageLimiter } = require('../middleware/rateLimiter');
 
 // Send message
-router.post('/', auth, async (req, res) => {
-  const { receiverUsername, roomId, encryptedMessage, encryptedKey } = req.body;
+router.post('/', [auth, messageLimiter], async (req, res) => {
+  const { receiverUsername, roomId, encryptedMessage, encryptedKey, expiryMinutes, encryptedFileData, fileName, fileType, ephemeralPublicKey } = req.body;
   try {
     let receiverId = null;
     let senderUsername = 'Unknown';
+    let expiresAt = null;
+
+    if (expiryMinutes && !isNaN(expiryMinutes)) {
+      expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
+    }
 
     try {
       const sender = await User.findById(req.user);
@@ -38,6 +44,11 @@ router.post('/', auth, async (req, res) => {
       roomId: roomId,
       encryptedMessage,
       encryptedKey,
+      encryptedFileData,
+      fileName,
+      fileType,
+      ephemeralPublicKey,
+      expiresAt,
     });
 
     await message.save();

@@ -5,11 +5,12 @@ const User = require('../models/User');
 const router = express.Router();
 
 const { logActivity } = require('../utils/logger');
+const { authLimiter } = require('../middleware/rateLimiter');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
 // Signup route
-router.post('/signup', async (req, res) => {
+router.post('/signup', authLimiter, async (req, res) => {
   const { username, password, publicKey, firstName, lastName, email, contactNumber } = req.body;
 
   try {
@@ -55,7 +56,7 @@ router.post('/signup', async (req, res) => {
 });
 
 // Login route
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   const { username, password } = req.body;
   try {
     const user = await User.findOne({ username });
@@ -66,8 +67,21 @@ router.post('/login', async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '1d' });
-    res.json({ token, username: user.username, publicKey: user.publicKey, isAdmin: user.isAdmin });
+
+    // Register Session
+    const newSession = {
+      deviceId: req.body.deviceId || `DEVICE_${Date.now()}`,
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+      lastSeen: new Date()
+    };
+
+    user.sessions.unshift(newSession);
+    if (user.sessions.length > 5) user.sessions.pop(); // Keep only last 5
+    await user.save();
+
+    const token = jwt.sign({ id: user._id, deviceId: newSession.deviceId }, JWT_SECRET, { expiresIn: '1d' });
+    res.json({ token, username: user.username, publicKey: user.publicKey, isAdmin: user.isAdmin, deviceId: newSession.deviceId });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
