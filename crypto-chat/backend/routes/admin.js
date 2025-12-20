@@ -3,16 +3,11 @@ const router = express.Router();
 const User = require('../models/User');
 const Message = require('../models/Message');
 
+const ActivityLog = require('../models/ActivityLog');
+const { logActivity } = require('../utils/logger');
+
 // Admin Middleware
 const adminAuth = async (req, res, next) => {
-    // Basic check - in real world use signed JWT with role or DB check
-    // For this MVP, we will check if the user exists and has isAdmin
-    // We expect the 'auth' middleware to run BEFORE this to populate req.user
-
-    // However, if we mount this as router.use(auth, adminAuth), we need auth middleware imported or passed.
-    // Let's rely on server.js to use auth middleware for this route, OR implement check here.
-    // Best practice: rely on req.user which should be the ID from JWT
-
     if (!req.user) {
         return res.status(401).json({ message: "Unauthorized" });
     }
@@ -39,12 +34,59 @@ router.get('/users', adminAuth, async (req, res) => {
     }
 });
 
+// Delete User
+router.delete('/users/:id', adminAuth, async (req, res) => {
+    try {
+        const userToDelete = await User.findById(req.params.id);
+        if (!userToDelete) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        if (userToDelete.isAdmin) {
+            return res.status(403).json({ message: 'Cannot delete an admin user' });
+        }
+
+        await User.findByIdAndDelete(req.params.id);
+
+        // Also delete their messages? For MVP just logs.
+        await logActivity(req.user, 'ADMIN', 'USER_DELETED', `Admin deleted user: ${userToDelete.username}`);
+
+        res.json({ message: 'User deleted successfully' });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Get Active Rooms
+router.get('/rooms', adminAuth, async (req, res) => {
+    try {
+        const rooms = await Message.distinct('roomId', { roomId: { $ne: null } });
+        res.json(rooms);
+    } catch (err) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 // Get System Stats
 router.get('/stats', adminAuth, async (req, res) => {
     try {
         const userCount = await User.countDocuments();
         const messageCount = await Message.countDocuments();
-        res.json({ userCount, messageCount });
+        const activityCount = await ActivityLog.countDocuments();
+        const roomCount = (await Message.distinct('roomId', { roomId: { $ne: null } })).length;
+        res.json({ userCount, messageCount, activityCount, roomCount });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Get Activity Logs
+router.get('/activities', adminAuth, async (req, res) => {
+    try {
+        const activities = await ActivityLog.find()
+            .sort({ timestamp: -1 })
+            .limit(50);
+        res.json(activities);
     } catch (err) {
         res.status(500).json({ message: 'Server error' });
     }

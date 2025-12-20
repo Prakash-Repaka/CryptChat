@@ -62,7 +62,7 @@ const App = () => {
           />
           <Route
             path="/admin"
-            element={token && isAdmin ? <AdminDashboard /> : <Navigate to="/" />}
+            element={token && isAdmin ? <AdminDashboard token={token} /> : <Navigate to="/" />}
           />
         </Routes>
       </div>

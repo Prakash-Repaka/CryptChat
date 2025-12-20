@@ -4,6 +4,8 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const router = express.Router();
 
+const { logActivity } = require('../utils/logger');
+
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
 // Signup route
@@ -35,6 +37,8 @@ router.post('/signup', async (req, res) => {
 
     user = new User({ username, password, publicKey, firstName, lastName, email, contactNumber });
     await user.save();
+
+    await logActivity(user._id, user.username, 'USER_SIGNUP', `User ${user.username} joined the platform.`);
 
     const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '1d' });
     res.json({ token, username: user.username });

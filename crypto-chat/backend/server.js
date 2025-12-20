@@ -1,14 +1,14 @@
+const dotenv = require('dotenv');
+dotenv.config();
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const dotenv = require('dotenv');
 const http = require('http');
 const socketIo = require('socket.io');
 const authRoutes = require('./routes/auth');
 const messageRoutes = require('./routes/messages');
 const userRoutes = require('./routes/users');
-
-dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
@@ -46,7 +46,11 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', require('./middleware/auth'), require('./routes/admin'));
 
-// Socket.io connection
+const { logActivity } = require('./utils/logger');
+
+// ... (existing imports and setup)
+
+// Replace the socket.io connection logic
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
@@ -54,18 +58,24 @@ io.on('connection', (socket) => {
   socket.on('register', (username) => {
     connectedUsers[username] = socket.id;
     console.log(`User ${username} registered with socket ${socket.id}`);
+    logActivity(null, username, 'USER_ONLINE', `User ${username} is now online.`);
   });
 
   // Join a specific room
   socket.on('joinRoom', (roomId) => {
     socket.join(roomId);
     console.log(`Socket ${socket.id} joined room ${roomId}`);
+
+    // Try to find the username associated with this socket
+    const username = Object.keys(connectedUsers).find(key => connectedUsers[key] === socket.id);
+    logActivity(null, username || 'Unknown', 'ROOM_JOINED', `User joined room: ${roomId}`);
   });
 
   socket.on('disconnect', () => {
     // Remove from connected users
     for (let user in connectedUsers) {
       if (connectedUsers[user] === socket.id) {
+        logActivity(null, user, 'USER_OFFLINE', `User ${user} went offline.`);
         delete connectedUsers[user];
         console.log(`User ${user} disconnected`);
         break;
