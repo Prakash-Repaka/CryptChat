@@ -1,42 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import './App.css';
-import Chat from './Chat';
 import Auth from './Auth';
+import Chat from './Chat';
 import Header from './Header';
 import AdminDashboard from './AdminDashboard';
+import RoomLobby from './RoomLobby';
+import './App.css';
 
-function App() {
-  const [token, setToken] = useState(localStorage.getItem('token') || '');
-  const [username, setUsername] = useState(localStorage.getItem('username') || '');
+const App = () => {
+  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [username, setUsername] = useState(localStorage.getItem('username'));
   const [isAdmin, setIsAdmin] = useState(localStorage.getItem('isAdmin') === 'true');
 
-  useEffect(() => {
-    if (token) {
-      localStorage.setItem('token', token);
-    } else {
-      localStorage.removeItem('token');
-    }
-  }, [token]);
-
-  useEffect(() => {
-    if (username) {
-      localStorage.setItem('username', username);
-    } else {
-      localStorage.removeItem('username');
-    }
-  }, [username]);
-
-  useEffect(() => {
-    if (isAdmin) {
+  const handleLogin = (newToken, newUsername, adminStatus) => {
+    setToken(newToken);
+    setUsername(newUsername);
+    localStorage.setItem('token', newToken);
+    localStorage.setItem('username', newUsername);
+    if (adminStatus) {
+      setIsAdmin(true);
       localStorage.setItem('isAdmin', 'true');
     } else {
+      setIsAdmin(false);
       localStorage.removeItem('isAdmin');
     }
-  }, [isAdmin]);
+  };
 
   const handleLogout = () => {
-    setToken('');
+    setToken(null);
     setUsername('');
     setIsAdmin(false);
     localStorage.removeItem('token');
@@ -48,21 +39,35 @@ function App() {
   return (
     <Router>
       <div className="App">
-        {token && <Header username={username} isAdmin={isAdmin} onLogout={handleLogout} />}
+        <Header username={username} onLogout={handleLogout} isAdmin={isAdmin} />
         <Routes>
-          <Route path="/" element={
-            !token ? <Auth setToken={setToken} setUsername={setUsername} setIsAdmin={setIsAdmin} /> : <Navigate to="/chat" />
-          } />
-          <Route path="/chat" element={
-            token ? <Chat token={token} username={username} /> : <Navigate to="/" />
-          } />
-          <Route path="/admin" element={
-            token ? (isAdmin ? <AdminDashboard token={token} /> : <Navigate to="/chat" />) : <Navigate to="/" />
-          } />
+          <Route
+            path="/"
+            element={!token ?
+              <Auth onLogin={handleLogin} setIsAdmin={setIsAdmin} /> :
+              <Navigate to="/lobby" />
+            }
+          />
+          <Route
+            path="/lobby"
+            element={token ? <RoomLobby /> : <Navigate to="/" />}
+          />
+          <Route
+            path="/chat/room/:roomId"
+            element={token ? <Chat token={token} username={username} /> : <Navigate to="/" />}
+          />
+          <Route
+            path="/chat"
+            element={token ? <Chat token={token} username={username} /> : <Navigate to="/" />}
+          />
+          <Route
+            path="/admin"
+            element={token && isAdmin ? <AdminDashboard /> : <Navigate to="/" />}
+          />
         </Routes>
       </div>
     </Router>
   );
-}
+};
 
 export default App;

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import CryptoJS from 'crypto-js';
 import io from 'socket.io-client';
@@ -7,38 +8,74 @@ import './Chat.css';
 import { encryptData, decryptData, importKey } from './utils/crypto';
 
 const Chat = ({ token, username }) => {
+  const { roomId } = useParams();
+  const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
+
+  const isRoomMode = !!roomId;
 
   // Helper to generate random AES key
   const generateAESKey = () => {
     return CryptoJS.lib.WordArray.random(32).toString(); // 256-bit
   };
 
-  const encryptMessage = (text, key) => {
+  const deriveRoomKey = (id) => {
+    // Simple key derivation from Room ID (In production, use PBKDF2 with salt)
+    return CryptoJS.SHA256(id).toString();
+  };
+
+  const encryptMessageAES = (text, key) => {
     return CryptoJS.AES.encrypt(text, key).toString();
   };
 
-  const decryptMessage = (encrypted, key) => {
+  const decryptMessageAES = (encrypted, key) => {
     try {
       const bytes = CryptoJS.AES.decrypt(encrypted, key);
       const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-      if (decrypted) {
-        return decrypted;
-      } else {
-        return null; // Decryption failed
-      }
+      return decrypted || null;
     } catch (e) {
       return null;
     }
   };
 
   const sendMessage = async () => {
-    if (messageInput.trim() && selectedUser) {
+    if (!messageInput.trim()) return;
+
+    if (isRoomMode) {
+      // Room Mode Sending
       try {
-        // 1. Fetch Receiver's Public Key (Using backend route)
-        // Note: For optimization, we could include publicKey in search results, but fetching fresh is safer
+        const roomKey = deriveRoomKey(roomId);
+        const encryptedMsg = encryptMessageAES(messageInput, roomKey);
+
+        await axios.post('http://localhost:5000/api/messages', {
+          roomId,
+          encryptedMessage: encryptedMsg,
+          encryptedKey: 'ROOM_KEY' // Not used for rooms, but required by schema
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        // Optimistic update
+        const newMessage = {
+          sender: { username },
+          roomId,
+          encryptedMessage: encryptedMsg,
+          encryptedKey: 'ROOM_KEY',
+          createdAt: new Date().toISOString(),
+          decrypted: messageInput
+        };
+        setMessages(prev => [...prev, newMessage]);
+        setMessageInput('');
+
+      } catch (err) {
+        console.error('Error sending room message:', err);
+        alert('Failed to send message.');
+      }
+    } else if (selectedUser) {
+      // Direct Chat Sending
+      try {
         const keyRes = await axios.get(`http://localhost:5000/api/users/${selectedUser.username}/key`);
         const receiverPublicKey = keyRes.data.publicKey;
 
@@ -47,17 +84,11 @@ const Chat = ({ token, username }) => {
           return;
         }
 
-        // 2. Generate Random AES Key
         const sessionKey = generateAESKey();
-
-        // 3. Encrypt Message with AES
-        const encryptedMsg = encryptMessage(messageInput, sessionKey);
-
-        // 4. Encrypt AES Key with RSA
+        const encryptedMsg = encryptMessageAES(messageInput, sessionKey);
         const importedPublicKey = await importKey(receiverPublicKey, 'public');
         const encryptedSessionKey = await encryptData(importedPublicKey, sessionKey);
 
-        // 5. Send Payload
         await axios.post('http://localhost:5000/api/messages', {
           receiverUsername: selectedUser.username,
           encryptedMessage: encryptedMsg,
@@ -67,20 +98,16 @@ const Chat = ({ token, username }) => {
         });
 
         const newMessage = {
-          sender: { username: username }, // Optimistic update
-          receiver: selectedUser._id, // Ideally populate object, but ID is fine for now
+          sender: { username },
+          receiver: selectedUser._id,
           encryptedMessage: encryptedMsg,
-          encryptedKey: encryptedSessionKey, // We can't decrypt our own sent message in this model easily without storing sender-encrypted key
+          encryptedKey: encryptedSessionKey,
           createdAt: new Date().toISOString(),
-          // We can't show decrypted text for our own message immediately unless we store plain text or encrypt for ourselves too
-          // For MVP, just show plain text locally
           decrypted: messageInput
         };
 
-        // Optimistic append
         setMessages(prev => [...prev, newMessage]);
         setMessageInput('');
-        // fetchMessages(); // No need to fetch immediately if optimized
       } catch (err) {
         console.error('Error sending message:', err);
         alert('Failed to send message.');
@@ -88,55 +115,51 @@ const Chat = ({ token, username }) => {
     }
   };
 
-  const decryptMessageContent = async (msg) => {
+  const decryptMessageContent = useCallback(async (msg) => {
     try {
-      const privateKeyPem = localStorage.getItem('privateKey');
-      if (!privateKeyPem) return 'Private key missing';
-
-      const importedPrivateKey = await importKey(privateKeyPem, 'private');
-
-      // Decrypt the AES key
-      const aesKey = await decryptData(importedPrivateKey, msg.encryptedKey);
-
-      // Decrypt the message
-      const decrypted = decryptMessage(msg.encryptedMessage, aesKey);
-      return decrypted;
+      if (msg.roomId) {
+        // Room Decryption
+        const roomKey = deriveRoomKey(msg.roomId);
+        return decryptMessageAES(msg.encryptedMessage, roomKey);
+      } else {
+        // Direct Message Decryption
+        const privateKeyPem = localStorage.getItem('privateKey');
+        if (!privateKeyPem) return 'Private key missing';
+        const importedPrivateKey = await importKey(privateKeyPem, 'private');
+        const aesKey = await decryptData(importedPrivateKey, msg.encryptedKey);
+        return decryptMessageAES(msg.encryptedMessage, aesKey);
+      }
     } catch (err) {
-      // console.error("Decryption failed (expected for sent messages)", err);
       return null;
     }
-  };
+  }, []);
 
-  const fetchMessages = React.useCallback(async () => {
+  const fetchMessages = useCallback(async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/messages', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const url = isRoomMode
+        ? `http://localhost:5000/api/messages?roomId=${roomId}`
+        : 'http://localhost:5000/api/messages';
 
-      const allMessages = res.data;
-      // Filter for selected user context locally (Ideally backend does filtering)
-      // Since API returns ALL messages for user, we filter here
+      const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
+      let allMessages = res.data;
 
-      if (!selectedUser) {
+      // For direct chat, filter client-side (unless API optimized)
+      if (!isRoomMode && selectedUser) {
+        allMessages = allMessages.filter(msg =>
+          (msg.sender.username === selectedUser.username && msg.receiver?.username === username) ||
+          (msg.sender.username === username && msg.receiver?.username === selectedUser.username)
+        );
+      } else if (!isRoomMode && !selectedUser) {
         setMessages([]);
         return;
       }
 
-      const chatMessages = allMessages.filter(msg =>
-        (msg.sender.username === selectedUser.username && msg.receiver.username === username) || // Received from them
-        (msg.sender.username === username && msg.receiver.username === selectedUser.username)   // Sent to them
-        // Note: Backend 'receiver' field is populated object in fetch but ID in send, check backend populate
-      );
-
-      // Decrypt what we can
-      const decryptedMessages = await Promise.all(chatMessages.map(async (msg) => {
-        if (msg.sender.username === username) {
-          // It's my sent message. I can't decrypt it with my private key because I encrypted it with THEIR public key.
-          // In a real app, I should have encrypted it for myself too.
-          // For now, just show "Sent Encrypted Message" or similar if we didn't catch it optimistically
+      const decryptedMessages = await Promise.all(allMessages.map(async (msg) => {
+        if (msg.sender.username === username && !isRoomMode) {
+          // For direct chat sent messages, we can't always decrypt unless we stored sender copy.
           return { ...msg, decrypted: "** Encrypted Message Sent **" };
         }
-        // Incoming message
+        // Room chats can always be decrypted by sender too because key is roomId
         const content = await decryptMessageContent(msg);
         return { ...msg, decrypted: content, error: content ? null : 'Decryption Failed' };
       }));
@@ -145,60 +168,78 @@ const Chat = ({ token, username }) => {
     } catch (err) {
       console.error('Error fetching messages:', err);
     }
-  }, [token, selectedUser, username]);
+  }, [token, selectedUser, username, isRoomMode, roomId, decryptMessageContent]);
 
   useEffect(() => {
-    if (selectedUser) {
-      fetchMessages();
+    fetchMessages();
+  }, [fetchMessages]);
+
+  useEffect(() => {
+    const newSocket = io('http://localhost:5000'); // Ensure URL matches backend
+
+    if (isRoomMode) {
+      // Since backend handles "join room" via socket if we implement room logic there,
+      // But backend just broadcasts to roomId. We need to tell socket to join.
+      // Wait, standard socket.io joins rooms via .join(). Backend usually handles this on 'connection' or specific event.
+      // My backend doesn't implement 'joinRoom' event explicitly, but `io.to(roomId)` works if socket joined.
+      // I need to add 'joinRoom' event to BACKEND or assume global broadcast?
+      // Checking backend... Socket logic not fully custom. It emits to `connectedUsers[username]` or `io.to(roomId)`.
+      // To receive room messages, socket MUST be in that room.
+      newSocket.emit('joinRoom', roomId);
     } else {
-      setMessages([]);
+      newSocket.emit('register', username);
     }
-  }, [fetchMessages, selectedUser]);
-
-  useEffect(() => {
-    const newSocket = io('http://localhost:5000');
-
-    newSocket.emit('register', username);
 
     newSocket.on('newMessage', async (message) => {
-      // Only append if it belongs to current chat
-      if (selectedUser && message.sender.username === selectedUser.username) {
+      let shouldAppend = false;
+      if (isRoomMode && message.roomId === roomId) shouldAppend = true;
+      if (!isRoomMode && selectedUser && message.sender.username === selectedUser.username && !message.roomId) shouldAppend = true;
+
+      if (shouldAppend) {
         const decrypted = await decryptMessageContent(message);
         setMessages(prev => [...prev, { ...message, decrypted, error: decrypted ? null : 'Decryption Failed' }]);
       }
-      // Else: Notification indicator (skipped for now)
     });
 
-    return () => {
-      newSocket.disconnect();
-    };
-  }, [username, selectedUser]);
+    return () => newSocket.disconnect();
+  }, [username, selectedUser, isRoomMode, roomId, decryptMessageContent]);
 
   return (
     <div className="chat-layout">
-      <Sidebar
-        onlineUsers={[]}
-        onSelectUser={setSelectedUser}
-        selectedUser={selectedUser}
-      />
-      <div className="main-chat">
+      {!isRoomMode && (
+        <Sidebar
+          onlineUsers={[]}
+          onSelectUser={setSelectedUser}
+          selectedUser={selectedUser}
+        />
+      )}
+
+      <div className="main-chat" style={{ width: isRoomMode ? '100%' : 'auto' }}>
         <div className="chat-header">
-          {selectedUser ? (
-            <div className="header-user">
-              <div className="avatar small">{selectedUser.username.charAt(0).toUpperCase()}</div>
-              <h2>{selectedUser.username}</h2>
+          {isRoomMode ? (
+            <div className="room-header">
+              <button className="back-btn" onClick={() => navigate('/lobby')}>← Lobby</button>
+              <h2>Room: {roomId}</h2>
             </div>
           ) : (
-            <h2>Select a user to start chatting</h2>
+            selectedUser ? (
+              <div className="header-user">
+                <div className="avatar small">{selectedUser.username.charAt(0).toUpperCase()}</div>
+                <h2>{selectedUser.username}</h2>
+              </div>
+            ) : (
+              <h2>Select a user to start chatting</h2>
+            )
           )}
         </div>
 
-        {selectedUser ? (
+        {(isRoomMode || selectedUser) ? (
           <>
             <div className="chat-messages">
               {messages.map((msg, index) => (
                 <div key={index} className={`message-bubble ${msg.sender.username === username ? 'own' : 'other'}`}>
                   <div className="message-content">
+                    <div className="message-sender">{msg.sender.username}</div>
                     <div className="message-text">
                       {msg.decrypted || "Encrypted Content"}
                       {msg.error && <span className="error-text"> ({msg.error})</span>}
@@ -212,7 +253,7 @@ const Chat = ({ token, username }) => {
               <textarea
                 value={messageInput}
                 onChange={(e) => setMessageInput(e.target.value)}
-                placeholder="Type a secure message..."
+                placeholder={isRoomMode ? `Message Room ${roomId}...` : "Type a secure message..."}
                 rows="1"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {

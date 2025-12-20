@@ -32,8 +32,13 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/crypto-ch
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.log(err));
+  .then(() => {
+    console.log('✅ MongoDB connected successfully');
+  })
+  .catch(err => {
+    console.error('❌ MongoDB connection error:', err.message);
+    console.log('Ensure MongoDB is running (e.g., "mongod" or a cloud URI in .env)');
+  });
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -49,6 +54,12 @@ io.on('connection', (socket) => {
   socket.on('register', (username) => {
     connectedUsers[username] = socket.id;
     console.log(`User ${username} registered with socket ${socket.id}`);
+  });
+
+  // Join a specific room
+  socket.on('joinRoom', (roomId) => {
+    socket.join(roomId);
+    console.log(`Socket ${socket.id} joined room ${roomId}`);
   });
 
   socket.on('disconnect', () => {

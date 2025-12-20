@@ -1,0 +1,130 @@
+.lobby-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: radial-gradient(circle at bottom left, #1f2937, #0d1117);
+}
+
+.lobby-card {
+    width: 100%;
+    max-width: 500px;
+    padding: 40px;
+    text-align: center;
+    background: rgba(22, 27, 34, 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(240, 246, 252, 0.1);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.lobby-card h1 {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.lobby-card p {
+    color: #8b949e;
+    margin-bottom: 2rem;
+}
+
+.lobby-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.action-section {
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.action-section h3 {
+    margin: 0 0 15px 0;
+    font-size: 1.1rem;
+    color: #e6edf3;
+}
+
+.divider {
+    color: #8b949e;
+    font-size: 0.9rem;
+    font-weight: bold;
+    position: relative;
+    margin: 10px 0;
+}
+
+.divider::before,
+.divider::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 40%;
+    height: 1px;
+    background: #30363d;
+}
+
+.divider::before {
+    left: 0;
+}
+
+.divider::after {
+    right: 0;
+}
+
+.create-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #238636, #2ea043);
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(35, 134, 54, 0.3);
+    transition: transform 0.1s;
+}
+
+.create-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(35, 134, 54, 0.4);
+}
+
+.room-input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    border: 1px solid #30363d;
+    background-color: #010409;
+    color: white;
+    font-size: 16px;
+    text-align: center;
+    letter-spacing: 1px;
+}
+
+.join-btn {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    background-color: transparent;
+    color: #58a6ff;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.join-btn:hover:not(:disabled) {
+    background-color: rgba(56, 139, 253, 0.1);
+    border-color: #58a6ff;
+}
+
+.join-btn:disabled {
+    color: #484f58;
+    cursor: not-allowed;
+    border-color: #21262d;
+}
