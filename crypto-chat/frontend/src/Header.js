@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import ThemeSwitcher from './ThemeSwitcher';
 import './Header.css';
 
 const Header = ({ username, isAdmin, onLogout }) => {
@@ -15,7 +16,9 @@ const Header = ({ username, isAdmin, onLogout }) => {
           </Link>
         </div>
         <div className="user-info">
+          <ThemeSwitcher />
           <span>Welcome, {username}</span>
+          <Link to="/settings" className="nav-btn">Settings</Link>
           {isAdmin && (
             location.pathname === '/admin'
               ? <Link to="/chat" className="nav-btn">Back to Chat</Link>

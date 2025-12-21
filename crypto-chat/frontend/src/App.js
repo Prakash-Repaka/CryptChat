@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider } from './ThemeContext';
 import Auth from './Auth';
 import Chat from './Chat';
 import Header from './Header';
 import AdminDashboard from './AdminDashboard';
 import RoomLobby from './RoomLobby';
+import Settings from './Settings';
 import './App.css';
 
 const App = () => {
@@ -37,36 +39,42 @@ const App = () => {
   };
 
   return (
-    <Router>
-      <div className="App">
-        <Header username={username} onLogout={handleLogout} isAdmin={isAdmin} />
-        <Routes>
-          <Route
-            path="/"
-            element={!token ?
-              <Auth onLogin={handleLogin} setIsAdmin={setIsAdmin} /> :
-              <Navigate to="/lobby" />
-            }
-          />
-          <Route
-            path="/lobby"
-            element={token ? <RoomLobby /> : <Navigate to="/" />}
-          />
-          <Route
-            path="/chat/room/:roomId"
-            element={token ? <Chat token={token} username={username} /> : <Navigate to="/" />}
-          />
-          <Route
-            path="/chat"
-            element={token ? <Chat token={token} username={username} /> : <Navigate to="/" />}
-          />
-          <Route
-            path="/admin"
-            element={token && isAdmin ? <AdminDashboard token={token} /> : <Navigate to="/" />}
-          />
-        </Routes>
-      </div>
-    </Router>
+    <ThemeProvider>
+      <Router>
+        <div className="App">
+          <Header username={username} onLogout={handleLogout} isAdmin={isAdmin} />
+          <Routes>
+            <Route
+              path="/"
+              element={!token ?
+                <Auth onLogin={handleLogin} setIsAdmin={setIsAdmin} /> :
+                <Navigate to="/lobby" />
+              }
+            />
+            <Route
+              path="/lobby"
+              element={token ? <RoomLobby /> : <Navigate to="/" />}
+            />
+            <Route
+              path="/chat/room/:roomId"
+              element={token ? <Chat token={token} username={username} /> : <Navigate to="/" />}
+            />
+            <Route
+              path="/chat"
+              element={token ? <Chat token={token} username={username} /> : <Navigate to="/" />}
+            />
+            <Route
+              path="/settings"
+              element={token ? <Settings /> : <Navigate to="/" />}
+            />
+            <Route
+              path="/admin"
+              element={token && isAdmin ? <AdminDashboard token={token} /> : <Navigate to="/" />}
+            />
+          </Routes>
+        </div>
+      </Router>
+    </ThemeProvider>
   );
 };
 

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import './Auth.css';
 import { generateKeyPair, exportKey } from './utils/crypto';
+import InstallPrompt from './InstallPrompt';
+import ThemeSwitcher from './ThemeSwitcher';
 
 const Auth = ({ onLogin }) => {
   const [isLogin, setIsLogin] = useState(true);
@@ -14,6 +16,8 @@ const Auth = ({ onLogin }) => {
     contactNumber: ''
   });
   const [error, setError] = useState('');
+  const [requiresMFA, setRequiresMFA] = useState(false);
+  const [mfaCode, setMfaCode] = useState('');
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -51,8 +55,15 @@ const Auth = ({ onLogin }) => {
       const url = isLogin ? 'http://localhost:5000/api/auth/login' : 'http://localhost:5000/api/auth/signup';
       const payload = { ...formData };
       if (publicKey) payload.publicKey = publicKey;
+      if (requiresMFA && mfaCode) payload.mfaToken = mfaCode;
 
       const res = await axios.post(url, payload);
+
+      // Check if MFA is required
+      if (res.data.requiresMFA) {
+        setRequiresMFA(true);
+        return;
+      }
 
       // Use the onLogin callback provided by App.js
       onLogin(res.data.token, res.data.username, !!res.data.isAdmin);
@@ -74,6 +85,10 @@ const Auth = ({ onLogin }) => {
 
   return (
     <div className="secure-auth-wrapper">
+      <div className="auth-top-controls">
+        <ThemeSwitcher />
+        <InstallPrompt />
+      </div>
       <div className="secure-auth-box">
         <h1>{isLogin ? 'SECURE LOGIN' : 'SECURE SIGNUP'}</h1>
         <form onSubmit={handleSubmit} className="secure-auth-form">
@@ -117,6 +132,23 @@ const Auth = ({ onLogin }) => {
               className="secure-input"
             />
           </div>
+
+          {/* MFA Code Input - Only show during login if MFA is required */}
+          {isLogin && requiresMFA && (
+            <div className="form-group">
+              <input
+                type="text"
+                placeholder="Enter 6-digit MFA code"
+                value={mfaCode}
+                onChange={(e) => setMfaCode(e.target.value)}
+                className="secure-input"
+                maxLength={6}
+                required
+              />
+              <p className="mfa-hint">Enter the code from your authenticator app</p>
+            </div>
+          )}
+
           <button type="submit" className="secure-btn">{isLogin ? 'Login' : 'Signup'}</button>
         </form>
         {error && <p className="secure-error">{error}</p>}

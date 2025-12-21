@@ -90,3 +90,50 @@
   font-weight: 500;
   font-size: 1rem;
 }
+
+/* Light mode sidebar styling */
+[data-theme="light"] .sidebar {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #dee2e6;
+}
+
+[data-theme="light"] .search-box {
+  border-bottom: 1px solid #dee2e6;
+}
+
+[data-theme="light"] .search-box input {
+  background: #ffffff;
+  border: 1px solid #ced4da;
+  color: #212529;
+}
+
+[data-theme="light"] .search-box input:focus {
+  border-color: #198754;
+}
+
+[data-theme="light"] .sidebar h3 {
+  color: #198754;
+}
+
+[data-theme="light"] .user-item {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="light"] .user-item:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .user-item.active {
+  background: linear-gradient(90deg, rgba(25, 135, 84, 0.1), transparent);
+  border-left: 3px solid #198754;
+}
+
+[data-theme="light"] .avatar {
+  background: linear-gradient(135deg, #198754, #20c997);
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(25, 135, 84, 0.3);
+}
+
+[data-theme="light"] .user-item span {
+  color: #212529;
+}

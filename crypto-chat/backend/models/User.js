@@ -12,6 +12,8 @@ const UserSchema = new mongoose.Schema({
   contactNumber: { type: String, required: true },
   isBanned: { type: Boolean, default: false },
   banReason: { type: String },
+  mfaEnabled: { type: Boolean, default: false },
+  mfaSecret: { type: String },
   sessions: [{
     deviceId: String,
     ip: String,

@@ -1,0 +1,80 @@
+.install-prompt-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border: 2px solid var(--accent-color);
+    border-radius: 8px;
+    background: var(--glass-bg);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.install-prompt-btn:hover {
+    background: var(--accent-color);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(35, 134, 54, 0.3);
+}
+
+[data-theme="cyberpunk"] .install-prompt-btn:hover {
+    box-shadow: var(--neon-glow-pink);
+}
+
+.install-icon {
+    font-size: 18px;
+}
+
+.install-text {
+    font-size: 14px;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .install-prompt-btn {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+
+    .install-text {
+        display: none;
+    }
+
+    .install-icon {
+        font-size: 20px;
+    }
+}
+
+/* Floating action button variant (optional) */
+.install-prompt-fab {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+.install-prompt-fab:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="cyberpunk"] .install-prompt-fab {
+    box-shadow: var(--neon-glow-pink);
+}

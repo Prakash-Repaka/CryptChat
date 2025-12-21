@@ -1,6 +1,8 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
+const speakeasy = require('speakeasy');
+const QRCode = require('qrcode');
 const User = require('../models/User');
 const router = express.Router();
 
@@ -57,7 +59,7 @@ router.post('/signup', authLimiter, async (req, res) => {
 
 // Login route
 router.post('/login', authLimiter, async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, mfaToken } = req.body;
   try {
     const user = await User.findOne({ username });
     if (!user) {
@@ -66,6 +68,26 @@ router.post('/login', authLimiter, async (req, res) => {
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    // Check if MFA is enabled
+    if (user.mfaEnabled) {
+      if (!mfaToken) {
+        // First step: credentials verified, now need MFA
+        return res.json({ requiresMFA: true, username: user.username });
+      }
+
+      // Verify MFA token
+      const verified = speakeasy.totp.verify({
+        secret: user.mfaSecret,
+        encoding: 'base32',
+        token: mfaToken,
+        window: 2
+      });
+
+      if (!verified) {
+        return res.status(400).json({ message: 'Invalid MFA code' });
+      }
     }
 
     // Register Session
@@ -83,6 +105,99 @@ router.post('/login', authLimiter, async (req, res) => {
     const token = jwt.sign({ id: user._id, deviceId: newSession.deviceId }, JWT_SECRET, { expiresIn: '1d' });
     res.json({ token, username: user.username, publicKey: user.publicKey, isAdmin: user.isAdmin, deviceId: newSession.deviceId });
   } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Setup MFA - Generate secret and QR code
+router.post('/setup-mfa', async (req, res) => {
+  try {
+    const { username } = req.body;
+    const user = await User.findOne({ username });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Generate secret
+    const secret = speakeasy.generateSecret({
+      name: `CryptChat (${username})`,
+      length: 32
+    });
+
+    // Generate QR code
+    const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url);
+
+    // Store secret temporarily (will be confirmed on verification)
+    user.mfaSecret = secret.base32;
+    await user.save();
+
+    res.json({
+      secret: secret.base32,
+      qrCode: qrCodeUrl
+    });
+  } catch (err) {
+    console.error('MFA Setup Error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Verify and enable MFA
+router.post('/verify-mfa', async (req, res) => {
+  try {
+    const { username, token } = req.body;
+    const user = await User.findOne({ username });
+
+    if (!user || !user.mfaSecret) {
+      return res.status(400).json({ message: 'MFA not set up' });
+    }
+
+    // Verify the token
+    const verified = speakeasy.totp.verify({
+      secret: user.mfaSecret,
+      encoding: 'base32',
+      token: token,
+      window: 2
+    });
+
+    if (!verified) {
+      return res.status(400).json({ message: 'Invalid MFA code' });
+    }
+
+    // Enable MFA
+    user.mfaEnabled = true;
+    await user.save();
+
+    res.json({ message: 'MFA enabled successfully' });
+  } catch (err) {
+    console.error('MFA Verification Error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Disable MFA
+router.post('/disable-mfa', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const user = await User.findOne({ username });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid password' });
+    }
+
+    // Disable MFA
+    user.mfaEnabled = false;
+    user.mfaSecret = null;
+    await user.save();
+
+    res.json({ message: 'MFA disabled successfully' });
+  } catch (err) {
+    console.error('MFA Disable Error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
