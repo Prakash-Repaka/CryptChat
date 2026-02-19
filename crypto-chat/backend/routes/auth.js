@@ -61,32 +61,47 @@ router.post('/signup', authLimiter, async (req, res) => {
 router.post('/login', authLimiter, async (req, res) => {
   const { username, password, mfaToken } = req.body;
   try {
-    const user = await User.findOne({ username });
-    if (!user) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+    if (!username || !password) {
+      return res.status(400).json({ message: 'Username and password are required.' });
     }
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ message: 'Database unavailable. Please ensure MongoDB is running.' });
+    }
+
+    // Case-insensitive search by username OR email
+    const user = await User.findOne({
+      $or: [
+        { username: { $regex: new RegExp(`^${username.trim()}$`, 'i') } },
+        { email: { $regex: new RegExp(`^${username.trim()}$`, 'i') } }
+      ]
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'No account found with that username or email.' });
+    }
+
+    if (user.isBanned) {
+      return res.status(403).json({ message: `Account banned: ${user.banReason || 'Contact support.'}` });
+    }
+
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(400).json({ message: 'Incorrect password. Please try again.' });
     }
 
     // Check if MFA is enabled
     if (user.mfaEnabled) {
       if (!mfaToken) {
-        // First step: credentials verified, now need MFA
         return res.json({ requiresMFA: true, username: user.username });
       }
-
-      // Verify MFA token
       const verified = speakeasy.totp.verify({
         secret: user.mfaSecret,
         encoding: 'base32',
         token: mfaToken,
         window: 2
       });
-
       if (!verified) {
-        return res.status(400).json({ message: 'Invalid MFA code' });
+        return res.status(400).json({ message: 'Invalid MFA code. Please try again.' });
       }
     }
 
@@ -97,17 +112,18 @@ router.post('/login', authLimiter, async (req, res) => {
       userAgent: req.headers['user-agent'],
       lastSeen: new Date()
     };
-
     user.sessions.unshift(newSession);
-    if (user.sessions.length > 5) user.sessions.pop(); // Keep only last 5
+    if (user.sessions.length > 5) user.sessions.pop();
     await user.save();
 
     const token = jwt.sign({ id: user._id, deviceId: newSession.deviceId }, JWT_SECRET, { expiresIn: '1d' });
     res.json({ token, username: user.username, publicKey: user.publicKey, isAdmin: user.isAdmin, deviceId: newSession.deviceId });
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    console.error('Login Error:', err);
+    res.status(500).json({ message: 'Server error. Please try again.' });
   }
 });
+
 
 // Setup MFA - Generate secret and QR code
 router.post('/setup-mfa', async (req, res) => {

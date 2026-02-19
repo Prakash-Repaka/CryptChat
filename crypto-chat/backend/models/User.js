@@ -14,6 +14,10 @@ const UserSchema = new mongoose.Schema({
   banReason: { type: String },
   mfaEnabled: { type: Boolean, default: false },
   mfaSecret: { type: String },
+  // User Profile
+  profilePic: { type: String, default: '' },       // base64 data URL
+  bio: { type: String, default: '', maxlength: 200 },
+  statusMessage: { type: String, default: '🔒 Encrypted & Private' },
   sessions: [{
     deviceId: String,
     ip: String,

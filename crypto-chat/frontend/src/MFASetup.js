@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import './MFASetup.css';
+import { API_BASE } from './config';
 
 const MFASetup = ({ username, onClose }) => {
     const [step, setStep] = useState('initial'); // initial, setup, verify
@@ -13,7 +14,7 @@ const MFASetup = ({ username, onClose }) => {
     const handleSetupMFA = async () => {
         try {
             setError('');
-            const res = await axios.post('http://localhost:5000/api/auth/setup-mfa', { username });
+            const res = await axios.post(`${API_BASE}/auth/setup-mfa`, { username });
             setQrCode(res.data.qrCode);
             setSecret(res.data.secret);
             setStep('verify');
@@ -25,7 +26,7 @@ const MFASetup = ({ username, onClose }) => {
     const handleVerifyMFA = async () => {
         try {
             setError('');
-            await axios.post('http://localhost:5000/api/auth/verify-mfa', {
+            await axios.post(`${API_BASE}/auth/verify-mfa`, {
                 username,
                 token: verificationCode
             });
@@ -44,7 +45,7 @@ const MFASetup = ({ username, onClose }) => {
 
         try {
             setError('');
-            await axios.post('http://localhost:5000/api/auth/disable-mfa', {
+            await axios.post(`${API_BASE}/auth/disable-mfa`, {
                 username,
                 password
             });

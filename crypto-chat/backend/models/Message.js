@@ -1,20 +1,36 @@
 const mongoose = require('mongoose');
 
 const MessageSchema = new mongoose.Schema({
-  sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  receiver: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Optional for Rooms
-  roomId: { type: String }, // For Room-based chat
-  encryptedMessage: { type: String, required: true },
-  encryptedKey: { type: String, required: true },
-  encryptedFileData: { type: String }, // Base64 encrypted file
+  sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  receiver: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  roomId: { type: String, default: null },
+  encryptedMessage: { type: String },
+  encryptedKey: { type: String },
+  encryptedFileData: { type: String },
   fileName: { type: String },
   fileType: { type: String },
-  ephemeralPublicKey: { type: String }, // For PFS handshake
+  ephemeralPublicKey: { type: String },
+  expiresAt: { type: Date, default: null },
   timestamp: { type: Date, default: Date.now },
-  expiresAt: { type: Date }, // For self-destructing messages
-});
 
-// TTL index to automatically delete expired messages
-MessageSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+  // Edit & Delete
+  isDeleted: { type: Boolean, default: false },
+  isEdited: { type: Boolean, default: false },
+  editedAt: { type: Date, default: null },
+
+  // Reactions – Map of emoji string -> array of usernames
+  reactions: { type: Map, of: [String], default: {} },
+
+  // Read Receipts
+  readBy: { type: [String], default: [] },
+
+  // Reply / Quote
+  replyTo: { type: mongoose.Schema.Types.ObjectId, ref: 'Message', default: null },
+
+  // Pin
+  pinned: { type: Boolean, default: false },
+  pinnedBy: { type: String, default: null },
+  pinnedAt: { type: Date, default: null },
+});
 
 module.exports = mongoose.model('Message', MessageSchema);

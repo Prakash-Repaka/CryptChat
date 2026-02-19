@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './AdminDashboard.css';
+import { API_BASE } from './config';
 
 const AdminDashboard = ({ token }) => {
     const [stats, setStats] = useState({ userCount: 0, messageCount: 0, activityCount: 0, roomCount: 0 });
@@ -20,10 +21,10 @@ const AdminDashboard = ({ token }) => {
             const config = { headers: { Authorization: `Bearer ${token}` } };
 
             const [statsRes, usersRes, activitiesRes, roomsRes] = await Promise.all([
-                axios.get('http://localhost:5000/api/admin/stats', config),
-                axios.get('http://localhost:5000/api/admin/users', config),
-                axios.get('http://localhost:5000/api/admin/activities', config),
-                axios.get('http://localhost:5000/api/admin/rooms', config)
+                axios.get(`${API_BASE}/admin/stats`, config),
+                axios.get(`${API_BASE}/admin/users`, config),
+                axios.get(`${API_BASE}/admin/activities`, config),
+                axios.get(`${API_BASE}/admin/rooms`, config)
             ]);
 
             setStats(statsRes.data);
@@ -32,7 +33,7 @@ const AdminDashboard = ({ token }) => {
             setRooms(roomsRes.data);
 
             if (viewingSessionsFor) {
-                const sessionsRes = await axios.get(`http://localhost:5000/api/admin/users/${viewingSessionsFor}/sessions`, config);
+                const sessionsRes = await axios.get(`${API_BASE}/admin/users/${viewingSessionsFor}/sessions`, config);
                 setSelectedUserSessions(sessionsRes.data);
             }
             setError('');
@@ -56,7 +57,7 @@ const AdminDashboard = ({ token }) => {
         setViewingSessionsFor(userId);
         try {
             const config = { headers: { Authorization: `Bearer ${token}` } };
-            const res = await axios.get(`http://localhost:5000/api/admin/users/${userId}/sessions`, config);
+            const res = await axios.get(`${API_BASE}/admin/users/${userId}/sessions`, config);
             setSelectedUserSessions(res.data);
         } catch (err) {
             alert('Failed to fetch sessions');
@@ -66,7 +67,7 @@ const AdminDashboard = ({ token }) => {
     const handleRevokeSession = async (sessionId) => {
         try {
             const config = { headers: { Authorization: `Bearer ${token}` } };
-            await axios.post(`http://localhost:5000/api/admin/users/${viewingSessionsFor}/sessions/${sessionId}/revoke`, {}, config);
+            await axios.post(`${API_BASE}/admin/users/${viewingSessionsFor}/sessions/${sessionId}/revoke`, {}, config);
             handleViewSessions(viewingSessionsFor);
         } catch (err) {
             alert('Failed to revoke session');
@@ -80,7 +81,7 @@ const AdminDashboard = ({ token }) => {
 
         try {
             const config = { headers: { Authorization: `Bearer ${token}` } };
-            await axios.post(`http://localhost:5000/api/admin/users/${userId}/${action}`, { reason }, config);
+            await axios.post(`${API_BASE}/admin/users/${userId}/${action}`, { reason }, config);
             fetchData();
         } catch (err) {
             alert(err.response?.data?.message || `Failed to ${action} user`);
@@ -91,7 +92,7 @@ const AdminDashboard = ({ token }) => {
         if (!announcement.trim()) return;
         try {
             const config = { headers: { Authorization: `Bearer ${token}` } };
-            await axios.post('http://localhost:5000/api/admin/announcements', { message: announcement }, config);
+            await axios.post(`${API_BASE}/admin/announcements`, { message: announcement }, config);
             setAnnouncement('');
             alert('Announcement sent!');
             fetchData();
@@ -107,7 +108,7 @@ const AdminDashboard = ({ token }) => {
 
         try {
             const config = { headers: { Authorization: `Bearer ${token}` } };
-            await axios.delete(`http://localhost:5000/api/admin/users/${userId}`, config);
+            await axios.delete(`${API_BASE}/admin/users/${userId}`, config);
             fetchData();
         } catch (err) {
             alert(err.response?.data?.message || 'Failed to delete user');

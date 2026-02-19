@@ -1,0 +1,77 @@
+/* ============================================
+   LINK PREVIEW CARD
+   ============================================ */
+
+.link-preview-card {
+    display: flex;
+    flex-direction: column;
+    margin-top: 8px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    background: var(--hover-bg);
+    text-decoration: none;
+    color: var(--text-color);
+    transition: all 0.2s ease;
+    max-width: 360px;
+}
+
+.link-preview-card:hover {
+    border-color: var(--accent-blue);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.link-preview-image {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    display: block;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.link-preview-text {
+    padding: 0.6rem 0.75rem;
+}
+
+.link-preview-hostname {
+    font-size: 0.65rem;
+    color: var(--accent-blue);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.link-preview-title {
+    margin: 0 0 3px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-color);
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.link-preview-desc {
+    margin: 0;
+    font-size: 0.73rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.link-preview-skeleton {
+    height: 70px;
+    border-radius: 10px;
+    background: linear-gradient(90deg, var(--hover-bg) 25%, var(--border-color) 50%, var(--hover-bg) 75%);
+    background-size: 200% auto;
+    animation: shimmer 1.5s linear infinite;
+    margin-top: 8px;
+    max-width: 360px;
+}

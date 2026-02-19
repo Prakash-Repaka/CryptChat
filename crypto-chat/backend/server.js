@@ -9,6 +9,7 @@ const socketIo = require('socket.io');
 const authRoutes = require('./routes/auth');
 const messageRoutes = require('./routes/messages');
 const userRoutes = require('./routes/users');
+const previewRoutes = require('./routes/preview');
 const { apiLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
@@ -16,7 +17,7 @@ app.use(apiLimiter); // Apply global rate limiting
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://10.10.10.95:3000', 'http://10.10.10.95:3001'],
     methods: ["GET", "POST"]
   }
 });
@@ -26,7 +27,10 @@ const PORT = process.env.PORT || 5000;
 const connectedUsers = {};
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://10.10.10.95:3000', 'http://10.10.10.95:3001'],
+  credentials: true
+}));
 app.use(express.json());
 
 // Connect to MongoDB
@@ -46,6 +50,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/crypto-ch
 app.use('/api/auth', authRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/preview', previewRoutes);
 app.use('/api/admin', require('./middleware/auth'), require('./routes/admin'));
 
 const { logActivity } = require('./utils/logger');

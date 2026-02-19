@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { ThemeProvider } from './ThemeContext';
 import Auth from './Auth';
 import Chat from './Chat';
@@ -8,6 +8,22 @@ import AdminDashboard from './AdminDashboard';
 import RoomLobby from './RoomLobby';
 import Settings from './Settings';
 import './App.css';
+
+// Handles /join/:roomId links — saves pending room then routes appropriately
+const JoinRedirect = ({ token }) => {
+  const { roomId } = useParams();
+  const navigate = useNavigate();
+  React.useEffect(() => {
+    if (!roomId) { navigate('/'); return; }
+    if (token) {
+      navigate(`/chat/room/${roomId}`, { replace: true });
+    } else {
+      sessionStorage.setItem('pendingRoom', roomId);
+      navigate('/', { replace: true });
+    }
+  }, [roomId, token, navigate]);
+  return null;
+};
 
 const App = () => {
   const [token, setToken] = useState(localStorage.getItem('token'));
@@ -38,6 +54,17 @@ const App = () => {
     localStorage.removeItem('isAdmin');
   };
 
+  const [installPrompt, setInstallPrompt] = useState(null);
+
+  React.useEffect(() => {
+    const handler = (e) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
   return (
     <ThemeProvider>
       <Router>
@@ -65,11 +92,16 @@ const App = () => {
             />
             <Route
               path="/settings"
-              element={token ? <Settings /> : <Navigate to="/" />}
+              element={token ? <Settings token={token} installPrompt={installPrompt} setInstallPrompt={setInstallPrompt} /> : <Navigate to="/" />}
+
             />
             <Route
               path="/admin"
               element={token && isAdmin ? <AdminDashboard token={token} /> : <Navigate to="/" />}
+            />
+            <Route
+              path="/join/:roomId"
+              element={<JoinRedirect token={token} />}
             />
           </Routes>
         </div>
