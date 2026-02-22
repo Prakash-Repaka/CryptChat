@@ -1,0 +1,71 @@
+.theme-switcher {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+}
+
+.theme-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.theme-options {
+    display: flex;
+    gap: 8px;
+}
+
+.theme-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--glass-bg);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.theme-btn:hover {
+    background: var(--hover-bg);
+    transform: translateY(-2px);
+}
+
+.theme-btn.active {
+    border-color: var(--accent-color);
+    background: var(--accent-color);
+    color: white;
+}
+
+[data-theme="cyberpunk"] .theme-btn.active {
+    box-shadow: var(--neon-glow-pink);
+}
+
+.theme-icon {
+    font-size: 18px;
+}
+
+.theme-name {
+    font-size: 13px;
+}
+
+@media (max-width: 768px) {
+    .theme-switcher {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .theme-btn {
+        padding: 6px 10px;
+    }
+
+    .theme-name {
+        display: none;
+    }
+}

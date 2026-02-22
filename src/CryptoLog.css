@@ -1,0 +1,176 @@
+.crypto-log-mini {
+    position: fixed;
+    bottom: 100px;
+    right: 20px;
+    background: rgba(10, 10, 10, 0.85);
+    border: 1px solid #00f2ff;
+    padding: 8px 15px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 11px;
+    color: #00f2ff;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+}
+
+.crypto-log-mini:hover {
+    background: rgba(0, 242, 255, 0.1);
+    box-shadow: 0 0 25px rgba(0, 242, 255, 0.4);
+}
+
+.crypto-log-container {
+    position: fixed;
+    bottom: 100px;
+    right: 20px;
+    width: 350px;
+    height: 450px;
+    background: rgba(5, 5, 5, 0.95);
+    border: 1px solid #00f2ff;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    z-index: 1001;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 242, 255, 0.1);
+    font-family: 'Consolas', 'Courier New', monospace;
+    overflow: hidden;
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.crypto-log-header {
+    background: rgba(0, 242, 255, 0.1);
+    padding: 10px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(0, 242, 255, 0.3);
+}
+
+.header-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: bold;
+    color: #00f2ff;
+    font-size: 12px;
+}
+
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #00f2ff;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #00f2ff;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 0.4;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.4;
+    }
+}
+
+.close-btn {
+    background: transparent;
+    border: none;
+    color: #00f2ff;
+    font-size: 10px;
+    cursor: pointer;
+    opacity: 0.7;
+}
+
+.close-btn:hover {
+    opacity: 1;
+}
+
+.crypto-log-body {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 242, 255, 0.2) transparent;
+}
+
+.crypto-log-body::-webkit-scrollbar {
+    width: 4px;
+}
+
+.crypto-log-body::-webkit-scrollbar-thumb {
+    background: rgba(0, 242, 255, 0.2);
+}
+
+.log-entry {
+    font-size: 11px;
+    line-height: 1.4;
+    word-break: break-all;
+}
+
+.log-time {
+    color: #444;
+    margin-right: 8px;
+}
+
+.log-entry.info {
+    color: #00f2ff;
+}
+
+.log-entry.system {
+    color: #7d00ff;
+    border-left: 2px solid #7d00ff;
+    padding-left: 5px;
+}
+
+.log-entry.success {
+    color: #00ff88;
+}
+
+.log-entry.warning {
+    color: #ffae00;
+}
+
+.log-entry.error {
+    color: #ff3c00;
+}
+
+.crypto-log-footer {
+    padding: 8px 15px;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.footer-stat {
+    font-size: 9px;
+    color: #666;
+    text-transform: uppercase;
+}
